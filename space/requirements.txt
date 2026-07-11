@@ -1,0 +1,4 @@
+# The Space installs the package (and its deps) straight from GitHub,
+# so there is one source of truth for the RAG code.
+git+https://github.com/santoshshinde2012/ask-santosh.git@main
+gradio>=4.44

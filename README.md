@@ -73,6 +73,20 @@ Each question runs the real pipeline and is scored on **Answer Relevancy**,
 [CI](.github/workflows/ci.yml) once `OPENAI_API_KEY` is set as a repo secret; until
 then it skips cleanly so the badge stays green.
 
+## Deploy a live demo (Hugging Face Space)
+
+A self-contained Gradio Space lives in [`space/`](space/) — a chat UI that installs
+this package from GitHub and indexes in memory on first request.
+
+```bash
+pip install huggingface_hub
+export HF_TOKEN=hf_xxx          # write token
+export OPENAI_API_KEY=sk_xxx    # also stored as the Space secret
+python space/deploy.py <your-hf-username>
+```
+
+Full instructions (and a web-UI path) in [`space/DEPLOY.md`](space/DEPLOY.md).
+
 ## Design choices
 
 - **Grounded-or-abstain** prompting — the model is told to say "not covered" rather

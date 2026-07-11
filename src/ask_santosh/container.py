@@ -19,13 +19,14 @@ from .store import JSONVectorStore
 
 
 def build_openai_client(settings: Settings) -> Any:
-    from openai import OpenAI  # lazy import
-
+    # Fail fast on configuration before importing the heavy SDK.
     if not settings.api_key:
         raise RuntimeError(
             "No API key found. Set OPENAI_API_KEY (or GITHUB_TOKEN with "
             "OPENAI_BASE_URL for GitHub Models)."
         )
+    from openai import OpenAI  # lazy import
+
     return OpenAI(api_key=settings.api_key, base_url=settings.base_url)
 
 
@@ -50,5 +51,25 @@ def build_rag_service(settings: Settings) -> RagService:
         store=store,
         top_k=settings.top_k,
     )
+    chat = OpenAIChatClient(client, settings.chat_model, settings.temperature)
+    return RagService(retriever, chat)
+
+
+def build_in_memory_rag_service(settings: Settings) -> RagService:
+    """Build a service that indexes on the fly, holding vectors in memory.
+
+    No disk index required — ideal for ephemeral hosts (Hugging Face Spaces,
+    serverless). Reuses the same components as the disk-backed variant.
+    """
+    client = build_openai_client(settings)
+    embedder = OpenAIEmbedder(client, settings.embed_model)
+    pipeline = IngestionPipeline(
+        source=RssDocumentSource(settings.feeds),
+        chunker=SlidingWindowChunker(settings.chunk_size, settings.chunk_overlap),
+        embedder=embedder,
+    )
+    store = JSONVectorStore()
+    store.upsert(pipeline.build())
+    retriever = Retriever(embedder, store, top_k=settings.top_k)
     chat = OpenAIChatClient(client, settings.chat_model, settings.temperature)
     return RagService(retriever, chat)
