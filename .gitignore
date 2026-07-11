@@ -6,3 +6,8 @@ venv/
 .deepeval/
 .pytest_cache/
 data/index.json
+
+# build artifacts
+*.egg-info/
+build/
+dist/
