@@ -1,30 +1,22 @@
-"""Reproducible RAG evaluation with DeepEval (pytest-style).
+"""Reproducible RAG evaluation with DeepEval (LLM-as-judge).
 
-Each question runs the real pipeline and is scored on three reference-free
-RAG metrics via an LLM judge:
+Gated: skipped unless a judge key is configured, so the default CI stays green.
+When enabled it runs the *real* pipeline and scores three reference-free RAG
+metrics — Answer Relevancy, Faithfulness (anti-hallucination), and Contextual
+Relevancy — at a 0.7 threshold.
 
-  - Answer Relevancy   — does the answer address the question?
-  - Faithfulness       — is the answer grounded in retrieved excerpts (no hallucination)?
-  - Contextual Relevancy — did retrieval surface relevant context?
-
-Run:  deepeval test run evals/test_rag.py      (or: pytest evals/test_rag.py)
-Requires an index (python -m src.ingest) and a judge model key.
+    deepeval test run evals/test_rag.py
 """
 from __future__ import annotations
 
-import pytest
-from deepeval import assert_test
-from deepeval.metrics import (
-    AnswerRelevancyMetric,
-    ContextualRelevancyMetric,
-    FaithfulnessMetric,
-)
-from deepeval.test_case import LLMTestCase
+import os
 
-from src.rag import answer
+import pytest
+
+_HAS_KEY = bool(os.getenv("OPENAI_API_KEY") or os.getenv("GITHUB_TOKEN"))
+pytestmark = pytest.mark.skipif(not _HAS_KEY, reason="no judge key configured")
 
 THRESHOLD = 0.7
-
 QUESTIONS = [
     "What is FrameSleuth and what problem does it solve?",
     "How does Santosh approach evaluating RAG systems in production?",
@@ -34,13 +26,29 @@ QUESTIONS = [
 ]
 
 
+@pytest.fixture(scope="module")
+def service():
+    from ask_santosh.container import build_rag_service
+    from ask_santosh.settings import Settings
+
+    return build_rag_service(Settings.from_env())
+
+
 @pytest.mark.parametrize("question", QUESTIONS)
-def test_rag_quality(question: str) -> None:
-    result = answer(question)
+def test_rag_quality(question: str, service) -> None:
+    from deepeval import assert_test
+    from deepeval.metrics import (
+        AnswerRelevancyMetric,
+        ContextualRelevancyMetric,
+        FaithfulnessMetric,
+    )
+    from deepeval.test_case import LLMTestCase
+
+    ans = service.answer(question)
     case = LLMTestCase(
         input=question,
-        actual_output=result["answer"],
-        retrieval_context=result["retrieval_context"],
+        actual_output=ans.text,
+        retrieval_context=list(ans.retrieval_context),
     )
     assert_test(
         case,

@@ -3,5 +3,11 @@ feedparser>=6.0
 fastapi>=0.110
 uvicorn>=0.29
 python-dotenv>=1.0
-deepeval>=1.4
+
+[dev]
 pytest>=8.0
+ruff>=0.6
+mypy>=1.11
+
+[evals]
+deepeval>=1.4

@@ -1,63 +1,82 @@
 # ask-santosh — RAG over my writing, with an eval harness
 
-> A PDF lists skills. A working system proves them.
+> A PDF lists skills. A working, tested system proves them.
 
-A small, honest, **retrieval-augmented question-answering service** over
+[![CI](https://github.com/santoshshinde2012/ask-santosh/actions/workflows/ci.yml/badge.svg)](https://github.com/santoshshinde2012/ask-santosh/actions/workflows/ci.yml)
+
+A small, honest **retrieval-augmented question-answering** service over
 [Santosh Shinde's](https://github.com/santoshshinde2012) published articles, plus a
-**reproducible DeepEval suite** that scores answer quality on every run. It exists to
-*demonstrate* — not just claim — hands-on RAG, evaluation, and MLOps practice.
+**reproducible DeepEval suite** that scores answer quality in CI. It exists to
+*demonstrate* — not just claim — hands-on RAG, evaluation, and clean engineering.
 
-It is deliberately dependency-light and **provider-agnostic**: point it at OpenAI,
-GitHub Models, or a local server (Ollama / vLLM / LocalAI) by changing two env vars.
+Dependency-light and **provider-agnostic**: point it at OpenAI, GitHub Models, or a
+local server (Ollama / vLLM / LocalAI) by changing two env vars.
 
 ---
 
-## How it works
+## Architecture (SOLID by construction)
+
+Business logic depends on **abstractions**, never on a vendor. Concrete providers are
+wired in exactly one place — the composition root.
 
 ```
-Medium RSS ──► ingest ──► chunk ──► embed ──► data/index.json (vector store)
-                                                   │
-question ──► embed ──► cosine top-k ──► prompt ──► chat model ──► answer + cited sources
-                                                   │
-                                            DeepEval: faithfulness · answer-relevancy · contextual-relevancy
+DocumentSource ─┐
+     Chunker ───┤ IngestionPipeline ──► VectorStore.upsert ──► data/index.json
+    Embedder ───┘
+
+   question ──► Retriever(Embedder, VectorStore) ──► RagService(Retriever, ChatClient) ──► Answer + sources
+                                                          │
+                                              DeepEval: faithfulness · answer-relevancy · contextual-relevancy
 ```
 
-- **`src/ingest.py`** — pulls the configured feeds, strips HTML, chunks (~900 chars,
-  150 overlap), embeds each chunk, and writes a flat JSON index.
-- **`src/rag.py`** — embeds the query, ranks chunks by cosine similarity, builds a
-  grounded prompt, and returns `{answer, sources, retrieval_context}`. The system
-  prompt forbids answering outside the retrieved excerpts (no hallucinated facts).
-- **`src/app.py`** — a FastAPI service exposing `GET/POST /ask`.
-- **`evals/test_rag.py`** — runs the real pipeline over a question set and asserts
-  three reference-free RAG metrics via an LLM judge, at a 0.7 threshold, in CI.
+| Principle | Where |
+| --- | --- |
+| **S**ingle responsibility | one job per module — `chunking`, `store`, `retriever`, `service`, `feeds`, `openai_adapter` |
+| **O**pen/closed | new provider or vector store = new class implementing a protocol; callers unchanged |
+| **L**iskov | any `VectorStore` (JSON today, pgvector tomorrow) drops in without breaking `Retriever` |
+| **I**nterface segregation | narrow protocols: `Embedder`, `ChatClient`, `Chunker`, `DocumentSource`, `VectorStore` |
+| **D**ependency inversion | `RagService`/`Retriever` depend on `protocols.py`, not on OpenAI; wiring lives in `container.py` |
+
+The payoff: the whole pipeline is **unit-tested with fakes — no network, no API key**
+(see `tests/`), while the LLM-judge evals run behind a secret.
 
 ## Quickstart
 
 ```bash
-pip install -r requirements.txt
-cp .env.example .env            # add OPENAI_API_KEY (or point at GitHub Models / Ollama)
+pip install -e ".[dev]"
+cp .env.example .env               # add OPENAI_API_KEY (or point at GitHub Models / Ollama)
 
-python -m src.ingest            # build the vector index
-uvicorn src.app:app --reload    # serve
+ask-santosh-ingest                 # build the vector index
+uvicorn ask_santosh.api:app --reload
 curl -s "localhost:8000/ask?q=What+is+FrameSleuth%3F"
 ```
 
-## Evaluation
+## Develop & test
 
 ```bash
+ruff check .          # lint + import order
+mypy src              # types
+pytest                # unit tests (no API key needed)
+```
+
+## Evaluate
+
+```bash
+pip install -e ".[evals]"
+ask-santosh-ingest
 deepeval test run evals/test_rag.py
 ```
 
-Every question is scored on **Answer Relevancy**, **Faithfulness** (grounded in the
-retrieved context — the anti-hallucination check), and **Contextual Relevancy**
-(did retrieval surface the right passages). The same suite runs in
-[`.github/workflows/evals.yml`](.github/workflows/evals.yml) on every push, gating at
-0.7 — so answer quality is a measured, versioned property, not a vibe.
+Each question runs the real pipeline and is scored on **Answer Relevancy**,
+**Faithfulness** (grounded in retrieved context — the anti-hallucination check), and
+**Contextual Relevancy**, gating at 0.7. The same suite runs in
+[CI](.github/workflows/ci.yml) once `OPENAI_API_KEY` is set as a repo secret; until
+then it skips cleanly so the badge stays green.
 
 ## Design choices
 
-- **Grounded-or-abstain** system prompt over cheap fluency — the model is instructed
-  to say "not covered" rather than guess.
+- **Grounded-or-abstain** prompting — the model is told to say "not covered" rather
+  than guess.
 - **Reference-free metrics** so the suite keeps working as new articles are ingested,
   without hand-labelling golden answers.
 - **Portable** — swap providers with `OPENAI_BASE_URL`; run fully local with Ollama.

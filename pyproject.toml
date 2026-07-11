@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ask-santosh"
+version = "1.0.0"
+description = "RAG over my writing + a reproducible DeepEval suite."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Santosh Shinde" }]
+dependencies = [
+  "openai>=1.40",
+  "feedparser>=6.0",
+  "fastapi>=0.110",
+  "uvicorn>=0.29",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6", "mypy>=1.11"]
+evals = ["deepeval>=1.4"]
+
+[project.urls]
+Homepage = "https://github.com/santoshshinde2012/ask-santosh"
+
+[project.scripts]
+ask-santosh-ingest = "ask_santosh.ingest:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
