@@ -1,6 +1,6 @@
 {
   "measured_at": "2026-08-19",
-  "queries": 14,
+  "queries": 18,
   "chunks": 12,
   "thresholds": {
     "recall@1": 0.8,
@@ -8,9 +8,9 @@
     "mrr": 0.9
   },
   "metrics": {
-    "recall@1": 0.8571,
+    "recall@1": 0.8889,
     "recall@3": 1.0,
-    "mrr": 0.9286
+    "mrr": 0.9444
   },
   "misses": []
 }
