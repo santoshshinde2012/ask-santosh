@@ -10,7 +10,11 @@
 
 <sub>Those four are not decoration: CI recomputes them on every push to `main` and
 publishes the result, so they always show what the quality gate actually measured.
-The raw numbers are in [summary.json](https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/summary.json).</sub>
+Browse them at **[the metrics page](https://santoshshinde2012.github.io/ask-santosh/)**
+or read the raw
+[summary.json](https://santoshshinde2012.github.io/ask-santosh/metrics/summary.json).
+The badges resolve through `raw.githubusercontent` so they keep working even if
+Pages is turned off.</sub>
 
 A small, honest **retrieval-augmented question-answering** service over
 [Santosh Shinde's](https://github.com/santoshshinde2012) published articles, plus a
