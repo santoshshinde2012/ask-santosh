@@ -9,9 +9,9 @@ embedder, so it runs on every push, costs nothing, and cannot flake.
 It exercises the real chunker, real store and real retriever — only the
 embedding provider is swapped, which the Embedder protocol exists to allow.
 
-Thresholds sit just under measured behaviour (recall@1 0.857, recall@3 1.000,
-MRR 0.929). Because every input is fixed there is no variance to absorb, so a
-drop below these means retrieval genuinely regressed. Verified to fail on a
+Thresholds sit just under measured behaviour (recall@1 0.889, recall@3 1.000,
+MRR 0.944 over 18 labelled queries). Because every input is fixed there is no
+variance to absorb, so a drop below these means retrieval genuinely regressed. Verified to fail on a
 constant similarity function, a truncating chunker, and a mis-ordering
 retriever.
 
@@ -42,6 +42,17 @@ def test_every_question_is_labelled() -> None:
     urls = {d.url for d in DOCUMENTS}
     unknown = {g for g in LABELLED.values() if g not in urls}
     assert not unknown, f"labels point at documents not in the corpus: {unknown}"
+
+
+def test_every_document_has_a_query() -> None:
+    """A document nobody asks about is a distractor, not coverage.
+
+    Guards the corpus against silent drift: adding a document without a query
+    quietly weakens the gate instead of strengthening it.
+    """
+    asked = set(LABELLED.values())
+    unreachable = sorted(d.url for d in DOCUMENTS if d.url not in asked)
+    assert not unreachable, f"documents with no labelled query: {unreachable}"
 
 
 def test_recall_at_1(metrics: Metrics) -> None:

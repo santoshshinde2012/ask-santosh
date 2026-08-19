@@ -157,4 +157,8 @@ LABELLED: dict[str, str] = {
     "Why does an autonomous reader break assumptions built for people?": "https://example.invalid/governance",
     "Can a captured session become a regression test?": "https://example.invalid/recordings-to-tests",
     "Where do tools and vector indexes get governed alongside tables?": "https://example.invalid/consumption-plane",
+    "How can tidy abstractions conceal a modelling assumption?": "https://example.invalid/patterns",
+    "What hides which hyperparameters were actually searched?": "https://example.invalid/patterns",
+    "Which layer holds raw ingested records before cleaning?": "https://example.invalid/medallion",
+    "How do I budget the token cost of a tool response?": "https://example.invalid/mcp",
 }

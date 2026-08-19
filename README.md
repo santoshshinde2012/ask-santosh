@@ -81,8 +81,8 @@ pytest evals/test_retrieval.py
 
 Scores **recall@1**, **recall@3** and **MRR** over a fixed labelled corpus
 (`evals/corpus.py`) using a deterministic hashing embedder, exercising the real
-chunker, store and retriever. Current thresholds: recall@1 ≥ 0.80, recall@3 = 1.00,
-MRR ≥ 0.90, against measured 0.857 / 1.000 / 0.929.
+chunker, store and retriever. Thresholds are floors: recall@1 ≥ 0.80, recall@3 = 1.00, MRR ≥ 0.90, against
+measured 0.889 / 1.000 / 0.944 over 18 labelled queries covering all 12 documents.
 
 Nothing here is random or networked, so a failure means retrieval actually
 regressed. It is verified to catch a broken similarity function, a truncating
