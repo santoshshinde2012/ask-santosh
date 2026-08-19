@@ -3,6 +3,14 @@
 > A PDF lists skills. A working, tested system proves them.
 
 [![CI](https://github.com/santoshshinde2012/ask-santosh/actions/workflows/ci.yml/badge.svg)](https://github.com/santoshshinde2012/ask-santosh/actions/workflows/ci.yml)
+[![recall@1](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/recall1.json)](https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/summary.json)
+[![recall@3](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/recall3.json)](https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/summary.json)
+[![MRR](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/mrr.json)](https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/summary.json)
+[![evals updated](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/updated.json)](https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/summary.json)
+
+<sub>Those four are not decoration: CI recomputes them on every push to `main` and
+publishes the result, so they always show what the quality gate actually measured.
+The raw numbers are in [summary.json](https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/summary.json).</sub>
 
 A small, honest **retrieval-augmented question-answering** service over
 [Santosh Shinde's](https://github.com/santoshshinde2012) published articles, plus a

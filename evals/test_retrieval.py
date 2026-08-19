@@ -11,80 +11,51 @@ embedding provider is swapped, which the Embedder protocol exists to allow.
 
 Thresholds sit just under measured behaviour (recall@1 0.857, recall@3 1.000,
 MRR 0.929). Because every input is fixed there is no variance to absorb, so a
-drop below these means retrieval genuinely regressed.
+drop below these means retrieval genuinely regressed. Verified to fail on a
+constant similarity function, a truncating chunker, and a mis-ordering
+retriever.
+
+The same `metrics.compute()` powers the published badge, so the number on the
+README is the number this gate asserted.
 """
 from __future__ import annotations
 
 import pytest
 from corpus import DOCUMENTS, LABELLED
-from local_embedding import HashingEmbedder
-
-from ask_santosh.chunking import SlidingWindowChunker
-from ask_santosh.ingest import IngestionPipeline
-from ask_santosh.retriever import Retriever
-from ask_santosh.store import JSONVectorStore
+from metrics import Metrics, build_store, compute
 
 MIN_RECALL_AT_1 = 0.80
 MIN_RECALL_AT_3 = 1.00
 MIN_MRR = 0.90
 
 
-class _FixedSource:
-    """DocumentSource over the labelled corpus."""
-
-    def load(self) -> list:
-        return list(DOCUMENTS)
-
-
 @pytest.fixture(scope="module")
-def store() -> JSONVectorStore:
-    embedder = HashingEmbedder()
-    pipeline = IngestionPipeline(
-        source=_FixedSource(),
-        chunker=SlidingWindowChunker(900, 150),
-        embedder=embedder,
-    )
-    s = JSONVectorStore()
-    s.upsert(pipeline.build())
-    return s
+def metrics() -> Metrics:
+    return compute(build_store())
 
 
-def _ranked_urls(store: JSONVectorStore, question: str, k: int) -> list[str]:
-    retriever = Retriever(HashingEmbedder(), store, top_k=k)
-    return [c.url for c in retriever.retrieve(question)]
+def test_index_is_populated() -> None:
+    assert len(build_store()) == len(DOCUMENTS), "chunker or ingest dropped documents"
 
 
-def test_index_is_populated(store: JSONVectorStore) -> None:
-    assert len(store) == len(DOCUMENTS), "chunker or ingest dropped documents"
+def test_every_question_is_labelled() -> None:
+    urls = {d.url for d in DOCUMENTS}
+    unknown = {g for g in LABELLED.values() if g not in urls}
+    assert not unknown, f"labels point at documents not in the corpus: {unknown}"
 
 
-@pytest.mark.parametrize("question,expected", sorted(LABELLED.items()))
-def test_gold_document_is_retrieved(store, question: str, expected: str) -> None:
-    """Every labelled question must surface its source within the top 3."""
-    assert expected in _ranked_urls(store, question, 3), (
-        f"{expected} missing from top-3 for {question!r}"
+def test_recall_at_1(metrics: Metrics) -> None:
+    assert metrics.recall_at_1 >= MIN_RECALL_AT_1, (
+        f"recall@1 {metrics.recall_at_1:.3f} < {MIN_RECALL_AT_1}"
     )
 
 
-def test_recall_at_1(store: JSONVectorStore) -> None:
-    hits = sum(
-        _ranked_urls(store, q, 1)[0] == gold for q, gold in LABELLED.items()
+def test_recall_at_3(metrics: Metrics) -> None:
+    assert metrics.recall_at_3 >= MIN_RECALL_AT_3, (
+        f"recall@3 {metrics.recall_at_3:.3f} < {MIN_RECALL_AT_3}; "
+        f"missed: {metrics.misses}"
     )
-    recall = hits / len(LABELLED)
-    assert recall >= MIN_RECALL_AT_1, f"recall@1 {recall:.3f} < {MIN_RECALL_AT_1}"
 
 
-def test_recall_at_3(store: JSONVectorStore) -> None:
-    hits = sum(gold in _ranked_urls(store, q, 3) for q, gold in LABELLED.items())
-    recall = hits / len(LABELLED)
-    assert recall >= MIN_RECALL_AT_3, f"recall@3 {recall:.3f} < {MIN_RECALL_AT_3}"
-
-
-def test_mean_reciprocal_rank(store: JSONVectorStore) -> None:
-    total = 0.0
-    for question, gold in LABELLED.items():
-        ranked = _ranked_urls(store, question, 5)
-        if gold in ranked:
-            total += 1.0 / (ranked.index(gold) + 1)
-    mrr = total / len(LABELLED)
-    assert mrr >= MIN_MRR, f"MRR {mrr:.3f} < {MIN_MRR}"
+def test_mean_reciprocal_rank(metrics: Metrics) -> None:
+    assert metrics.mrr >= MIN_MRR, f"MRR {metrics.mrr:.3f} < {MIN_MRR}"
