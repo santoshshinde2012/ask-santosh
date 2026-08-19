@@ -1,7 +1,7 @@
 """Abstractions the rest of the system depends on (Dependency Inversion).
 
 Every collaborator is a narrow, single-purpose Protocol (Interface Segregation),
-so concrete providers — OpenAI, GitHub Models, a local model, an in-memory or a
+so concrete providers — OpenAI, Azure, a local model, an in-memory or a
 pgvector store — are swappable without touching business logic (Open/Closed).
 """
 from __future__ import annotations

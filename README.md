@@ -9,8 +9,8 @@ A small, honest **retrieval-augmented question-answering** service over
 **reproducible DeepEval suite** that scores answer quality in CI. It exists to
 *demonstrate* — not just claim — hands-on RAG, evaluation, and clean engineering.
 
-Dependency-light and **provider-agnostic**: point it at OpenAI, GitHub Models, or a
-local server (Ollama / vLLM / LocalAI) by changing two env vars.
+Dependency-light and **provider-agnostic**: point it at OpenAI, Azure, or a local
+server (Ollama / vLLM / LocalAI) by changing two env vars.
 
 ---
 
@@ -25,8 +25,9 @@ DocumentSource ─┐
     Embedder ───┘
 
    question ──► Retriever(Embedder, VectorStore) ──► RagService(Retriever, ChatClient) ──► Answer + sources
-                                                          │
-                                              DeepEval: faithfulness · answer-relevancy · contextual-relevancy
+                        │                                 │
+        recall@k / MRR ─┘                                 └─ DeepEval: faithfulness ·
+        (key-free, every push)                               answer-relevancy · contextual-relevancy
 ```
 
 | Principle | Where |
@@ -37,14 +38,15 @@ DocumentSource ─┐
 | **I**nterface segregation | narrow protocols: `Embedder`, `ChatClient`, `Chunker`, `DocumentSource`, `VectorStore` |
 | **D**ependency inversion | `RagService`/`Retriever` depend on `protocols.py`, not on OpenAI; wiring lives in `container.py` |
 
-The payoff: the whole pipeline is **unit-tested with fakes — no network, no API key**
-(see `tests/`), while the LLM-judge evals run behind a secret.
+The payoff is testability. Because `Embedder` is an abstraction, retrieval can be
+scored end to end with a local hashing embedder — **no network, no key, no spend** —
+so the quality gate runs on every push rather than only when a judge key exists.
 
 ## Quickstart
 
 ```bash
 pip install -e ".[dev]"
-cp .env.example .env               # add OPENAI_API_KEY (or point at GitHub Models / Ollama)
+cp .env.example .env               # add OPENAI_API_KEY (or point OPENAI_BASE_URL at Ollama)
 
 ask-santosh-ingest                 # build the vector index
 uvicorn ask_santosh.api:app --reload
@@ -61,6 +63,25 @@ pytest                # unit tests (no API key needed)
 
 ## Evaluate
 
+Two tiers, deliberately. The cheap one always runs; the expensive one runs when it can.
+
+### 1. Retrieval gate — key-free, runs on every push
+
+```bash
+pytest evals/test_retrieval.py
+```
+
+Scores **recall@1**, **recall@3** and **MRR** over a fixed labelled corpus
+(`evals/corpus.py`) using a deterministic hashing embedder, exercising the real
+chunker, store and retriever. Current thresholds: recall@1 ≥ 0.80, recall@3 = 1.00,
+MRR ≥ 0.90, against measured 0.857 / 1.000 / 0.929.
+
+Nothing here is random or networked, so a failure means retrieval actually
+regressed. It is verified to catch a broken similarity function, a truncating
+chunker, and a mis-ordering retriever.
+
+### 2. Answer gate — DeepEval, needs a judge key
+
 ```bash
 pip install -e ".[evals]"
 ask-santosh-ingest
@@ -68,10 +89,10 @@ deepeval test run evals/test_rag.py
 ```
 
 Each question runs the real pipeline and is scored on **Answer Relevancy**,
-**Faithfulness** (grounded in retrieved context — the anti-hallucination check), and
-**Contextual Relevancy**, gating at 0.7. The same suite runs in
-[CI](.github/workflows/ci.yml) once `OPENAI_API_KEY` is set as a repo secret; until
-then it skips cleanly so the badge stays green.
+**Faithfulness** (the anti-hallucination check) and **Contextual Relevancy**, gating
+at 0.7. In [CI](.github/workflows/ci.yml) this job is gated at the job level, so
+without `OPENAI_API_KEY` it reports as **skipped** — a grey check, not a green one
+that ran nothing.
 
 ## Deploy a live demo (Hugging Face Space)
 
@@ -94,6 +115,14 @@ Full instructions (and a web-UI path) in [`space/DEPLOY.md`](space/DEPLOY.md).
 - **Reference-free metrics** so the suite keeps working as new articles are ingested,
   without hand-labelling golden answers.
 - **Portable** — swap providers with `OPENAI_BASE_URL`; run fully local with Ollama.
+
+### Known limits
+
+- **The corpus is the last 10 posts.** Medium's RSS feed returns only the ten most
+  recent items, so "everything I've written" is really a rolling window. Point
+  `FEEDS` at more feeds, or add a source that reads an archive, to widen it.
+- **Linear cosine scan.** Correct and dependency-free at this size; swap
+  `JSONVectorStore` for pgvector/FAISS when the corpus outgrows memory.
 
 ## License
 

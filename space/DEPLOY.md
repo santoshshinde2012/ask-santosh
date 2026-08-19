@@ -21,7 +21,7 @@ the Space page once it finishes building.
 1. Create a Space at <https://huggingface.co/new-space> → SDK **Gradio**.
 2. Upload `app.py`, `requirements.txt`, and `README.md` from this folder.
 3. In **Settings › Secrets**, add `OPENAI_API_KEY` (or `OPENAI_BASE_URL` +
-   `GITHUB_TOKEN` for GitHub Models).
+   any OpenAI-compatible endpoint via `OPENAI_BASE_URL`).
 4. Wait for the build; open the app.
 
 ## After deploying

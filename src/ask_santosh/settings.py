@@ -15,7 +15,12 @@ def _feeds_from_env() -> list[str]:
 
 
 def _api_key() -> str:
-    return os.getenv("OPENAI_API_KEY") or os.getenv("GITHUB_TOKEN") or ""
+    # Deliberately does NOT fall back to GITHUB_TOKEN: that env var is present
+    # by default inside GitHub Actions, so the fallback made an unconfigured CI
+    # look configured and then fail on auth. GitHub Models, the reason it
+    # existed, was retired on 2026-07-30. Point OPENAI_BASE_URL at any
+    # OpenAI-compatible endpoint instead.
+    return os.getenv("OPENAI_API_KEY") or ""
 
 
 @dataclass(frozen=True, slots=True)

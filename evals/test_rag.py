@@ -13,7 +13,10 @@ import os
 
 import pytest
 
-_HAS_KEY = bool(os.getenv("OPENAI_API_KEY") or os.getenv("GITHUB_TOKEN"))
+# Only a real judge key counts. GITHUB_TOKEN is present by default in Actions,
+# so including it here made this suite attempt to run and fail on auth rather
+# than skip cleanly.
+_HAS_KEY = bool(os.getenv("OPENAI_API_KEY"))
 pytestmark = pytest.mark.skipif(not _HAS_KEY, reason="no judge key configured")
 
 THRESHOLD = 0.7

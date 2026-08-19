@@ -22,8 +22,9 @@ def build_openai_client(settings: Settings) -> Any:
     # Fail fast on configuration before importing the heavy SDK.
     if not settings.api_key:
         raise RuntimeError(
-            "No API key found. Set OPENAI_API_KEY (or GITHUB_TOKEN with "
-            "OPENAI_BASE_URL for GitHub Models)."
+            "No API key found. Set OPENAI_API_KEY, optionally with "
+            "OPENAI_BASE_URL to target any OpenAI-compatible endpoint "
+            "(Azure, Ollama, vLLM)."
         )
     from openai import OpenAI  # lazy import
 

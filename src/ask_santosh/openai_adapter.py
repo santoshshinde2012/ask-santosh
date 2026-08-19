@@ -2,7 +2,7 @@
 
 The concrete client is injected (built once in the composition root), so these
 classes hold no global state and are easy to fake in tests. Because the client
-is OpenAI-compatible, the same adapters serve OpenAI, GitHub Models, Azure, or a
+is OpenAI-compatible, the same adapters serve OpenAI, Azure, Ollama, vLLM, or a
 local server (Ollama/vLLM) — the only difference is the injected base_url.
 """
 from __future__ import annotations
