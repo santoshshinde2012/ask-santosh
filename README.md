@@ -7,6 +7,7 @@
 [![recall@3](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/recall3.json)](https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/summary.json)
 [![MRR](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/mrr.json)](https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/summary.json)
 [![evals updated](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/updated.json)](https://raw.githubusercontent.com/santoshshinde2012/ask-santosh/gh-pages/metrics/summary.json)
+[![Buy Me a Coffee](https://img.shields.io/badge/buymeacoffee-black?style=for-the-badge&logo=buymeacoffee&logoColor=white)](https://buymeacoffee.com/santoshshin)
 
 <sub>Those four are not decoration: CI recomputes them on every push to `main` and
 publishes the result, so they always show what the quality gate actually measured.
